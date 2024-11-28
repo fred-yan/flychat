@@ -45,10 +45,10 @@ func NewDB(config Config) (*gorm.DB, error) {
 func InstallDB() {
 	// 配置数据库连接信息
 	config := Config{
-		Host:     "47.106.210.117",
+		Host:     "*",
 		Port:     "3306",
-		User:     "root",
-		Password: "mysql@123",
+		User:     "*",
+		Password: "*",
 		DBName:   "flychat",
 	}
 
