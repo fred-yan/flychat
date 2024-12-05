@@ -5,7 +5,6 @@ import (
 	"flychat/model"
 	"flychat/platform"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -42,6 +41,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := _uuid.New()
 		c.Writer.Header().Set("X-Request-Id", uuid.String())
+		c.Set("requestId", uuid.String())
 		c.Next()
 	}
 }
@@ -51,6 +51,9 @@ func LogMiddleware() gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
+		if raw != "" {
+			path = path + "?" + raw
+		}
 
 		c.Next()
 
@@ -61,9 +64,11 @@ func LogMiddleware() gin.HandlerFunc {
 		clientIP := c.ClientIP()
 		method := c.Request.Method
 		userAgent := c.Request.UserAgent()
+		requestId := c.GetString("requestId")
 
 		logrus.Infof(
-			"| %3d | %13v | %15s | %4s | %33s | %s |",
+			" [%s] %d | %v | %s | %s | %s | %s ",
+			requestId,
 			status,
 			latency,
 			clientIP,
@@ -78,40 +83,54 @@ func LogMiddleware() gin.HandlerFunc {
 	}
 }
 
+var auth = new(controller.AuthController)
+
+// TokenAuthMiddleware ...
+// JWT Authentication middleware attached to each request that needs to be authenitcated to
+// validate the access_token in the header
+func TokenAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		auth.TokenValid(c)
+		c.Next()
+	}
+}
+
 func main() {
 	fmt.Println("Server started...")
 
 	//Load the .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("error: failed to load the env file")
+		fmt.Println("failed to load the env file")
 	}
 
-	//Start the default gin server
-	r := gin.Default()
+	platform.InitFile("./log", "gin")
 
+	r := gin.Default()
 	r.Use(CORSMiddleware())
 	r.Use(RequestIDMiddleware())
 	r.Use(LogMiddleware())
 
-	//Start database
+	//init database
 	platform.InitDB()
 	model.InstallDB()
 
+	platform.InitLLMClient()
+
 	v1 := r.Group("/v1")
 	{
-		/*** START USER ***/
 		user := new(controller.UserController)
-
-		v1.POST("/user/login", user.Login)
 		v1.POST("/user/register", user.Register)
+		v1.POST("/user/login", user.Login)
 		//v1.GET("/user/logout", user.Logout)
 
-		/*** START AUTH ***/
-		auth := new(controller.AuthController)
-
-		//Refresh the token when needed to generate new access_token and refresh_token for the user
+		//Refresh the token
 		v1.POST("/token/refresh", auth.Refresh)
+
+		// Chat
+		chat := new(controller.ChatController)
+		v1.POST("/test", TokenAuthMiddleware(), chat.Test)
+		v1.POST("/chat", TokenAuthMiddleware(), chat.Chat)
 	}
 
 	port := os.Getenv("PORT")

@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"flychat/platform"
 	"flychat/service"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -14,43 +14,41 @@ type UserController struct{}
 
 var userService = service.UserService{}
 
-func (ctrl UserController) Register(c *gin.Context) {
-	// 1. 添加日志记录
-	logger := logrus.New()
-	logger.Info("Handling user registration request")
+var logger = platform.Logger
 
-	// 2. 获取请求参数
+func (ctrl UserController) Register(c *gin.Context) {
+	logger.Infof("[%s] Handling user registration request", c.GetString("requestId"))
+
 	var input struct {
 		Username string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
-		Email    string `json:"email" binding:"required,email"`
+		Email    string `json:"email" binding:"email"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		logger.Error("Invalid input: ", err)
+		logger.Warnf("[%s] Invalid input, %s", c.GetString("requestId"), err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// 3. 处理用户注册逻辑
 	user := &service.User{
 		Username: input.Username,
 		Password: input.Password,
 		Email:    input.Email,
 	}
 	if err := userService.Register(user); err != nil {
-		logger.Error("Failed to register user: ", err)
+		logger.Warnf("[%s] Failed to register user %s: %s", c.GetString("requestId"), user.Username, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 		return
 	}
 
-	// 4. 返回成功响应
-	logger.Info("User registered successfully")
+	logger.Infof("[%s] User %s registered successfully", c.GetString("requestId"), user.Username)
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
 func (ctrl UserController) Login(c *gin.Context) {
-	// 1. 获取请求参数
+	logger.Infof("[%s] Handling user login request", c.GetString("requestId"))
+
 	var loginRequest struct {
 		Username string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
@@ -66,10 +64,12 @@ func (ctrl UserController) Login(c *gin.Context) {
 		Password: loginRequest.Password,
 	})
 	if err != nil {
+		logger.Warnf("[%s] User %s failed to login: %s", c.GetString("requestId"), loginRequest.Username, err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
+	logger.Infof("[%s] User %s login successfully", c.GetString("requestId"), loginRequest.Username)
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 

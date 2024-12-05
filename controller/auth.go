@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	jwt "github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // AuthController ...
@@ -18,14 +18,17 @@ var tokenService = new(service.TokenService)
 
 // TokenValid ...
 func (a AuthController) TokenValid(c *gin.Context) {
-
-	_, err := tokenService.ExtractTokenMetadata(c.Request)
+	tokenAuth, err := tokenService.ExtractTokenMetadata(c.Request)
 	if err != nil {
 		//Token either expired or not valid
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Please login first"})
 		return
 	}
 
+	UserId := tokenAuth.UserID
+	UserName := tokenAuth.UserName
+	c.Set("UserId", UserId)
+	c.Set("UserName", UserName)
 }
 
 // Refresh ...
@@ -60,8 +63,14 @@ func (a AuthController) Refresh(c *gin.Context) {
 			return
 		}
 
+		userName, ok := claims["user_name"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid authorization, please login again"})
+			return
+		}
+
 		//Create new pairs of refresh and access tokens
-		ts, createErr := tokenService.CreateToken(uint(userID))
+		ts, createErr := tokenService.CreateToken(uint(userID), userName)
 		if createErr != nil {
 			c.JSON(http.StatusForbidden, gin.H{"message": "Invalid authorization, please login again"})
 			return

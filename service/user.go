@@ -54,7 +54,7 @@ func (service *UserService) Login(user *User) (string, error) {
 
 	// 生成会话令牌
 	ts := &TokenService{}
-	token, err := ts.CreateToken(registeredUser.ID)
+	token, err := ts.CreateToken(registeredUser.ID, registeredUser.Username)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
 		return "", errors.New("failed to generate token")

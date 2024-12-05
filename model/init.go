@@ -4,7 +4,9 @@ import "flychat/platform"
 
 func InstallDB() {
 	db := platform.DB
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(
+		&User{},
+		&Message{}); err != nil {
 		panic(err)
 	}
 }

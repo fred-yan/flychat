@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v4"
-	uuid "github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 // TokenDetails ...
@@ -22,6 +22,7 @@ type TokenDetails struct {
 // AccessDetails ...
 type AccessDetails struct {
 	AccessUUID string
+	UserName   string
 	UserID     int64
 }
 
@@ -34,8 +35,7 @@ type Token struct {
 type TokenService struct{}
 
 // CreateToken ...
-func (t *TokenService) CreateToken(userID uint) (*TokenDetails, error) {
-
+func (t *TokenService) CreateToken(userID uint, userName string) (*TokenDetails, error) {
 	td := &TokenDetails{}
 	td.AtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
 	td.AccessUUID = uuid.New().String()
@@ -46,6 +46,7 @@ func (t *TokenService) CreateToken(userID uint) (*TokenDetails, error) {
 	atClaims["authorized"] = true
 	atClaims["access_uuid"] = td.AccessUUID
 	atClaims["user_id"] = userID
+	atClaims["user_name"] = userName
 	atClaims["exp"] = td.AtExpires
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
@@ -111,9 +112,14 @@ func (t *TokenService) ExtractTokenMetadata(r *http.Request) (*AccessDetails, er
 		if err != nil {
 			return nil, err
 		}
+		userName, ok := claims["user_name"].(string)
+		if !ok {
+			return nil, err
+		}
 		return &AccessDetails{
 			AccessUUID: accessUUID,
 			UserID:     userID,
+			UserName:   userName,
 		}, nil
 	}
 	return nil, err
