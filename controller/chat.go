@@ -23,12 +23,13 @@ func (ch ChatController) Chat(c *gin.Context) {
 		return
 	}
 
-	if err := summaryService.GetSummary(c, reqData.Url); err != nil {
+	summaryResult, err := summaryService.GetSummary(c, reqData.Url)
+	if err != nil {
 		logger.Warnf("[%s] Failed to get summary: %s", c.GetString("requestId"), err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get summary"})
 		return
 	}
-
+	c.JSON(http.StatusOK, summaryResult)
 }
 
 func (ch ChatController) Test(c *gin.Context) {
