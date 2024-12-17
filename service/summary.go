@@ -15,7 +15,7 @@ import (
 
 var logger = platform.Logger
 
-type summmaryService struct {
+type SummaryService struct {
 }
 
 func getMKData(c *gin.Context, url string) (string, error) {
@@ -38,7 +38,7 @@ func getMKData(c *gin.Context, url string) (string, error) {
 	return content, nil
 }
 
-func (s *summmaryService) GetSummary(c *gin.Context, url string) error {
+func (s *SummaryService) GetSummary(c *gin.Context, url string) error {
 	// 获取请求参数
 	type Message struct {
 		Role    openai.ChatCompletionMessageParamRole `json:"role"`
@@ -104,7 +104,7 @@ func (s *summmaryService) GetSummary(c *gin.Context, url string) error {
 			ConversationId: conversationId,
 			Role:           string(userMessage.Role),
 			Content:        userMessage.Content,
-		}); err != nil {
+		}).Error; err != nil {
 			logger.Warnf("[%s] create messge for db error, %s", c.GetString("requestId"), err)
 		}
 	}()
