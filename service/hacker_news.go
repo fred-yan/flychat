@@ -82,7 +82,7 @@ func (hn *HackerNewsService) HackerNewsSummary(c *gin.Context, count int) ([]Sum
 	topStories, err := fetchTopStories(hackerNewsUrl)
 	if err != nil {
 		logger.Warnf("[%s] fetchTopStories error, %s", c.GetString("requestId"), err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "request " + " error: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request error: " + err.Error()})
 		return nil, err
 	}
 

@@ -66,3 +66,12 @@ func GetUserByUsername(username string) (*User, error) {
 	}
 	return &user, nil
 }
+
+func GetUserList() ([]User, error) {
+	var users []User
+	db := platform.DB
+	if err := db.Find(&users).Error; err != nil {
+		return nil, fmt.Errorf("database query failed: %w", err)
+	}
+	return users, nil
+}

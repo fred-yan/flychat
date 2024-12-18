@@ -4,6 +4,7 @@ import (
 	"flychat/controller"
 	"flychat/model"
 	"flychat/platform"
+	"flychat/service"
 	"fmt"
 	"os"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,12 +129,19 @@ func main() {
 		//Refresh the token
 		v1.POST("/token/refresh", auth.Refresh)
 
-		// Chat
+		// Summary
 		chat := new(controller.ChatController)
 		v1.POST("/test", TokenAuthMiddleware(), chat.Test)
-		v1.POST("/hsummary", TokenAuthMiddleware(), chat.HSummary)
-		v1.POST("/chat", TokenAuthMiddleware(), chat.Chat)
+		v1.POST("/hsummary", chat.HSummary)
+		v1.POST("/summary", TokenAuthMiddleware(), chat.Summary)
 	}
+
+	c := cron.New()
+	c.AddFunc("39 17 * * *", func() {
+		_, _ = service.StartHSummary(5)
+		service.SendEMail()
+	})
+	c.Start()
 
 	port := os.Getenv("PORT")
 	r.Run(":" + port)

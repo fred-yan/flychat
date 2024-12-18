@@ -13,7 +13,7 @@ type ChatController struct{}
 var summaryService = service.SummaryService{}
 var hackerNewsService = service.HackerNewsService{}
 
-func (ch ChatController) Chat(c *gin.Context) {
+func (ch ChatController) Summary(c *gin.Context) {
 	var reqData struct {
 		Url string `json:"url"`
 	}

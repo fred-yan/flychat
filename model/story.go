@@ -53,3 +53,9 @@ func UpdateStorySummary(storyId int, summary string) error {
 
 	return nil
 }
+
+func GetStoryList() ([]Story, error) {
+	db := platform.DB
+	var stories []Story
+	return stories, db.Find(&stories).Error
+}
