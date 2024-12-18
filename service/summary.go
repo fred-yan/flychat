@@ -60,7 +60,8 @@ func (s *SummaryService) GetSummary(c *gin.Context, url string) (*SummaryResult,
 		return nil, err
 	}
 
-	promptContent := "请您反复阅读以下markdown语法的正文后，给出不超过100字的文章总结。\n\n"
+	promptContent := "请您反复阅读以下markdown语法的正文后，先给出不超过200字的英文总结。\n" +
+		"然后请在英文总结后面再补充一段不超过150字的中文总结\n"
 	userContent := promptContent + content
 	userMessage := Message{
 		Role:    "user",

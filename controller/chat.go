@@ -11,6 +11,7 @@ import (
 type ChatController struct{}
 
 var summaryService = service.SummaryService{}
+var hackerNewsService = service.HackerNewsService{}
 
 func (ch ChatController) Chat(c *gin.Context) {
 	var reqData struct {
@@ -30,6 +31,30 @@ func (ch ChatController) Chat(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, summaryResult)
+}
+
+func (ch ChatController) HSummary(c *gin.Context) {
+	logger.Infof("[%s] Handling HSummary request", c.GetString("requestId"))
+	var input struct {
+		Count int `json:"count"`
+	}
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		logger.Warnf("[%s] Invalid input, %s", c.GetString("requestId"), err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	var hSummaryResult []service.SummaryResult
+	hSummaryResult, err = hackerNewsService.HackerNewsSummary(c, input.Count)
+	if err != nil {
+		logger.Warnf("[%s] Failed to get HackerNews summary: %s", c.GetString("requestId"), err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get summary"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Result": hSummaryResult})
 }
 
 func (ch ChatController) Test(c *gin.Context) {

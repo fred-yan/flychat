@@ -130,6 +130,7 @@ func main() {
 		// Chat
 		chat := new(controller.ChatController)
 		v1.POST("/test", TokenAuthMiddleware(), chat.Test)
+		v1.POST("/hsummary", TokenAuthMiddleware(), chat.HSummary)
 		v1.POST("/chat", TokenAuthMiddleware(), chat.Chat)
 	}
 

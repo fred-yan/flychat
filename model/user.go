@@ -22,10 +22,10 @@ type User struct {
 	Username  string    `gorm:"type:varchar(255);not null;unique" json:"username"`
 	Email     string    `gorm:"type:varchar(255);not null;unique" json:"email"`
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
-	Nickname  string    `json:"nickname"`
-	Phone     string    `json:"phone"`
+	Nickname  string    `gorm:"type:varchar(255)" json:"nickname"`
+	Phone     string    `gorm:"type:varchar(128)" json:"phone"`
 	Avatar    string    `json:"avatar"`
-	Role      Role      `json:"role"`
+	Role      Role      `gorm:"type:varchar(64)" json:"role"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

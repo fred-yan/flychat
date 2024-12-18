@@ -6,7 +6,8 @@ func InstallDB() {
 	db := platform.DB
 	if err := db.AutoMigrate(
 		&User{},
-		&Message{}); err != nil {
+		&Message{},
+		&Story{}); err != nil {
 		panic(err)
 	}
 }
