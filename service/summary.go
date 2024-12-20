@@ -13,6 +13,7 @@ import (
 	"github.com/openai/openai-go"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var logger = platform.Logger
@@ -72,7 +73,7 @@ func (s *SummaryService) GetSummary(c *gin.Context, url string) (*SummaryResult,
 	}
 
 	contentType := http.DetectContentType(data)
-	if contentType != "text/html" {
+	if !strings.Contains(contentType, "html") {
 		logger.Warnf("[%s] request %s content type is %s not support", c.GetString("requestId"), url, contentType)
 		summary := "\n文章链接格式暂不支持，抱歉无法给出文章总结！"
 		return &SummaryResult{Summary: summary, Url: url}, nil
