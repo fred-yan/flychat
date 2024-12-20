@@ -7,6 +7,9 @@ import (
 	"flychat/platform"
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 	"github.com/openai/openai-go"
 	"io"
 	"net/http"
@@ -22,24 +25,27 @@ type SummaryResult struct {
 	Url     string `json:"url"`
 }
 
-func getMKData(c *gin.Context, url string) (string, error) {
-	res, err := http.Get(url)
-	if err != nil {
-		logger.Warnf("[%s] request %s error, %s", url, c.GetString("requestId"), err)
-		return "", err
-	}
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		logger.Warnf("[%s] read body error, %s", c.GetString("requestId"), err)
-		return "", err
-	}
-
+func htmlToMd(data []byte) (string, error) {
 	content, err := htmltomarkdown.ConvertString(string(data))
 	if err != nil {
-		logger.Warnf("[%s] transfer body error, %s", c.GetString("requestId"), err)
+		logger.Warnf("transfer body error, %s", err)
 		return "", err
 	}
 	return content, nil
+}
+
+func mdToHtml(md []byte) []byte {
+	// create markdown parser with extensions
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse(md)
+
+	// create HTML renderer with extensions
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+
+	return markdown.Render(doc, renderer)
 }
 
 func (s *SummaryService) GetSummary(c *gin.Context, url string) (*SummaryResult, error) {
@@ -54,18 +60,43 @@ func (s *SummaryService) GetSummary(c *gin.Context, url string) (*SummaryResult,
 	}
 	messages := []Message{promptMessage}
 
-	content, err := getMKData(c, url)
+	res, err := http.Get(url)
+	if err != nil {
+		logger.Warnf("[%s] request %s error, %s", url, c.GetString("requestId"), err)
+		return nil, err
+	}
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		logger.Warnf("[%s] read body error, %s", c.GetString("requestId"), err)
+		return nil, err
+	}
+
+	contentType := http.DetectContentType(data)
+	if contentType != "text/html" {
+		logger.Warnf("[%s] request %s content type is %s not support", c.GetString("requestId"), url, contentType)
+		summary := "\n文章链接格式暂不支持，抱歉无法给出文章总结！"
+		return &SummaryResult{Summary: summary, Url: url}, nil
+	}
+
+	logger.Infof("[%s] request %s success, data lengeth is %d", c.GetString("requestId"), url, len(data))
+	content, err := htmlToMd(data)
 	if err != nil {
 		logger.Warnf("[%s] get url data error, %s", c.GetString("requestId"), err)
 		return nil, err
 	}
 
+	if content == "" {
+		logger.Warnf("[%s] get url markdwon data is null", c.GetString("requestId"))
+		summary := "\n无法获取文章链接内容，抱歉无法给出文章总结！"
+		return &SummaryResult{Summary: summary, Url: url}, nil
+	}
+
 	promptContent := "请您反复阅读以下markdown语法的正文后，先给出不超过200字的英文总结。\n" +
 		"然后请在英文总结后面再补充一段不超过200字的中文总结\n" +
 		"输出格式如下：\n" +
-		"### English Summary\n" +
+		"- **English Summary**\n\n" +
 		"{英文总结}\n\n" +
-		"### 中文总结\n" +
+		"- **中文总结**\n\n" +
 		"{中文总结}"
 	userContent := promptContent + content
 	userMessage := Message{

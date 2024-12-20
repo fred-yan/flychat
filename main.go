@@ -132,14 +132,15 @@ func main() {
 		// Summary
 		chat := new(controller.ChatController)
 		v1.POST("/test", TokenAuthMiddleware(), chat.Test)
-		v1.POST("/hsummary", chat.HSummary)
+		v1.POST("/hsummary", chat.SummaryPages)
+		v1.POST("/psummary", chat.PublishSummary)
 		v1.POST("/summary", TokenAuthMiddleware(), chat.Summary)
 	}
 
 	c := cron.New()
-	c.AddFunc("39 17 * * *", func() {
-		_, _ = service.StartHSummary(5)
-		service.SendEMail()
+	c.AddFunc("0 17 * * *", func() {
+		_, _ = service.SummaryHackerNewsTask(30)
+		_ = service.SendMailTask()
 	})
 	c.Start()
 

@@ -33,8 +33,8 @@ func (ch ChatController) Summary(c *gin.Context) {
 	c.JSON(http.StatusOK, summaryResult)
 }
 
-func (ch ChatController) HSummary(c *gin.Context) {
-	logger.Infof("[%s] Handling HSummary request", c.GetString("requestId"))
+func (ch ChatController) SummaryPages(c *gin.Context) {
+	logger.Infof("[%s] Handling SummaryPages request", c.GetString("requestId"))
 	var input struct {
 		Count int `json:"count"`
 	}
@@ -55,6 +55,17 @@ func (ch ChatController) HSummary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"Result": hSummaryResult})
+}
+
+func (ch ChatController) PublishSummary(c *gin.Context) {
+	err := hackerNewsService.MailSummary(c)
+	if err != nil {
+		logger.Warnf("[%s] Failed to publish summary: %s", c.GetString("requestId"), err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to publish summary" + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Status": "Success"})
 }
 
 func (ch ChatController) Test(c *gin.Context) {
