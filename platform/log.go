@@ -61,13 +61,13 @@ func (m *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 func InitFile(logPath string, fileName string) {
 	logrus.SetFormatter(&LogFormatter{})
 	timer := time.Now().Format("2006-01-02")
-	filepath := fmt.Sprintf("%s/%s", logPath, timer)
+	filepath := fmt.Sprintf("%s", logPath)
 	err := os.MkdirAll(filepath, os.ModePerm)
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
-	filename := fmt.Sprintf("%s/%s.log", filepath, fileName)
+	filename := fmt.Sprintf("%s/%s-%s.log", filepath, timer, fileName)
 	writer, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		logrus.Error(err)
@@ -85,13 +85,13 @@ func InitAppLogger(logPath string, fileName string) *logrus.Logger {
 	logger := logrus.New()
 
 	timer := time.Now().Format("2006-01-02")
-	filepath := fmt.Sprintf("%s/%s", logPath, timer)
+	filepath := fmt.Sprintf("%s", logPath)
 	err := os.MkdirAll(filepath, os.ModePerm)
 	if err != nil {
 		logrus.Error(err)
 		return nil
 	}
-	filename := fmt.Sprintf("%s/%s.log", filepath, fileName)
+	filename := fmt.Sprintf("%s/%s-%s.log", filepath, timer, fileName)
 	logFile, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		logrus.Error(err)
